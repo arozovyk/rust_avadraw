@@ -1,0 +1,75 @@
+{
+  "_format": "hh-sol-cache-2",
+  "files": {
+    "/Users/artemiyrozovyk/Desktop/ocp/avalanche/ava-drawit/hardhat-avadraw/contracts/Board.sol": {
+      "lastModificationDate": 1668619325110,
+      "contentHash": "9c0139fc936f08c0b4b3363f543bcaef",
+      "sourceName": "contracts/Board.sol",
+      "solcConfig": {
+        "version": "0.8.16",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 180
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "0.8.16"
+      ],
+      "artifacts": [
+        "Board"
+      ]
+    },
+    "/Users/artemiyrozovyk/Desktop/ocp/rust/folder/generics/hardhat-avadraw/contracts/Board.sol": {
+      "lastModificationDate": 1668619984195,
+      "contentHash": "996f1eca46bfa93fcd2dd21386b444b8",
+      "sourceName": "contracts/Board.sol",
+      "solcConfig": {
+        "version": "0.8.16",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 180
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "0.8.16"
+      ],
+      "artifacts": [
+        "Board"
+      ]
+    }
+  }
+}
