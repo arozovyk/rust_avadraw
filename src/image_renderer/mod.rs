@@ -8,7 +8,7 @@ extern crate oxipng;
 // Update image on image event,
 // Update board_db on buy event
 #[allow(dead_code)]
-pub fn run() {
+pub async fn run() {
     let mut i = 0;
     loop {
         sleep(Duration::from_secs(2));
