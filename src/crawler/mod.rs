@@ -1,10 +1,13 @@
 use std::env;
 use std::str::FromStr;
+use tokio::sync::mpsc::Sender;
 use tokio::time::*;
 
 use web3::contract::{Contract, Error, Options};
 use web3::transports::WebSocket;
 use web3::types::{Address, H160, U256};
+
+use crate::comms::Command;
 
 fn wei_to_eth(wei_val: U256) -> f64 {
     let res = wei_val.as_u128() as f64;
@@ -63,12 +66,20 @@ pub async fn call_board() -> Result<(), Error> {
 // monitors the contract for changes
 // puts draw events into the db
 
-pub async fn run() {
+pub async fn run(tx: &Sender<Command>) {
     let mut i = 0;
 
     loop {
         tokio::time::sleep(Duration::from_secs(2)).await;
         println!("Crawler step {} ", i);
+        if i % 5 == 0 {
+            println!("Crawler sends buy command ");
+            let cmd = Command::Buy {
+                from: "Dog".into(),
+                price: 420,
+            };
+            tx.send(cmd).await.unwrap();
+        }
         call_board().await.unwrap();
         i += 1;
     }
