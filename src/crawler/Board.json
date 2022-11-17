@@ -1,0 +1,812 @@
+[
+  {
+    "inputs": [],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint8",
+            "name": "x",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "y",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "dx",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "dy",
+            "type": "uint8"
+          }
+        ],
+        "indexed": false,
+        "internalType": "struct Board.Zone",
+        "name": "zone",
+        "type": "tuple"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "price",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "url",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "buy_self",
+        "type": "bool"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      }
+    ],
+    "name": "Buy",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint8",
+            "name": "x",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "y",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "dx",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "dy",
+            "type": "uint8"
+          }
+        ],
+        "indexed": false,
+        "internalType": "struct Board.Zone",
+        "name": "zone",
+        "type": "tuple"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "url",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      }
+    ],
+    "name": "ChangeUrl",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint16",
+        "name": "x",
+        "type": "uint16"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint16",
+        "name": "y",
+        "type": "uint16"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "url",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "overlay",
+        "type": "bool"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "emiter",
+        "type": "address"
+      }
+    ],
+    "name": "DrawImage",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint16",
+        "name": "x",
+        "type": "uint16"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint16",
+        "name": "y",
+        "type": "uint16"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint8[4]",
+        "name": "color",
+        "type": "uint8[4]"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "overlay",
+        "type": "bool"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "emiter",
+        "type": "address"
+      }
+    ],
+    "name": "DrawPixel",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint16",
+        "name": "x",
+        "type": "uint16"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint16",
+        "name": "y",
+        "type": "uint16"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "text",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint16",
+        "name": "text_height",
+        "type": "uint16"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint8[4]",
+        "name": "text_color",
+        "type": "uint8[4]"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint8[4]",
+        "name": "background_color",
+        "type": "uint8[4]"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "font_family",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "font_name",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "overlay",
+        "type": "bool"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "emiter",
+        "type": "address"
+      }
+    ],
+    "name": "DrawText",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint8",
+            "name": "x",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "y",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "dx",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "dy",
+            "type": "uint8"
+          }
+        ],
+        "indexed": false,
+        "internalType": "struct Board.Zone",
+        "name": "zone",
+        "type": "tuple"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "price",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "url",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "buy_self",
+        "type": "bool"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      }
+    ],
+    "name": "UniformalBuy",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint8",
+            "name": "x",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "y",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "dx",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "dy",
+            "type": "uint8"
+          }
+        ],
+        "internalType": "struct Board.Zone",
+        "name": "zone",
+        "type": "tuple"
+      },
+      {
+        "components": [
+          {
+            "internalType": "bool",
+            "name": "buy_self",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint16",
+            "name": "buy_rate",
+            "type": "uint16"
+          }
+        ],
+        "internalType": "struct Board.BuyInfo",
+        "name": "buy_info",
+        "type": "tuple"
+      },
+      {
+        "internalType": "string",
+        "name": "ulr",
+        "type": "string"
+      },
+      {
+        "internalType": "address",
+        "name": "referer",
+        "type": "address"
+      }
+    ],
+    "name": "buy",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint8",
+            "name": "x",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "y",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "dx",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "dy",
+            "type": "uint8"
+          }
+        ],
+        "internalType": "struct Board.Zone",
+        "name": "zone",
+        "type": "tuple"
+      },
+      {
+        "components": [
+          {
+            "internalType": "bool",
+            "name": "buy_self",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint16",
+            "name": "buy_rate",
+            "type": "uint16"
+          }
+        ],
+        "internalType": "struct Board.BuyInfo",
+        "name": "buy_info",
+        "type": "tuple"
+      },
+      {
+        "internalType": "string",
+        "name": "ulr",
+        "type": "string"
+      },
+      {
+        "internalType": "address",
+        "name": "referer",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "tilePrice",
+        "type": "uint256"
+      }
+    ],
+    "name": "buyUniform",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "changeOwner",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint8",
+            "name": "x",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "y",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "dx",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "dy",
+            "type": "uint8"
+          }
+        ],
+        "internalType": "struct Board.Zone",
+        "name": "zone",
+        "type": "tuple"
+      },
+      {
+        "internalType": "string",
+        "name": "url",
+        "type": "string"
+      }
+    ],
+    "name": "changeUrl",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint8",
+        "name": "x",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint8",
+        "name": "y",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint8",
+        "name": "width",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint8",
+        "name": "height",
+        "type": "uint8"
+      },
+      {
+        "internalType": "bool",
+        "name": "buy_self",
+        "type": "bool"
+      }
+    ],
+    "name": "countPrice",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "count",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint8",
+        "name": "x",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint8",
+        "name": "y",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint8",
+        "name": "width",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint8",
+        "name": "height",
+        "type": "uint8"
+      },
+      {
+        "internalType": "bool",
+        "name": "buy_self",
+        "type": "bool"
+      },
+      {
+        "internalType": "uint8",
+        "name": "rate",
+        "type": "uint8"
+      }
+    ],
+    "name": "countPriceWithRate",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "count",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint16",
+        "name": "x",
+        "type": "uint16"
+      },
+      {
+        "internalType": "uint16",
+        "name": "y",
+        "type": "uint16"
+      },
+      {
+        "internalType": "string",
+        "name": "url",
+        "type": "string"
+      },
+      {
+        "internalType": "bool",
+        "name": "overlay",
+        "type": "bool"
+      }
+    ],
+    "name": "drawImage",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint16",
+        "name": "x",
+        "type": "uint16"
+      },
+      {
+        "internalType": "uint16",
+        "name": "y",
+        "type": "uint16"
+      },
+      {
+        "internalType": "uint8[4]",
+        "name": "color",
+        "type": "uint8[4]"
+      },
+      {
+        "internalType": "bool",
+        "name": "overlay",
+        "type": "bool"
+      }
+    ],
+    "name": "drawPixel",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint16",
+        "name": "x",
+        "type": "uint16"
+      },
+      {
+        "internalType": "uint16",
+        "name": "y",
+        "type": "uint16"
+      },
+      {
+        "internalType": "string",
+        "name": "text",
+        "type": "string"
+      },
+      {
+        "internalType": "uint16",
+        "name": "text_height",
+        "type": "uint16"
+      },
+      {
+        "internalType": "uint8[4]",
+        "name": "text_color",
+        "type": "uint8[4]"
+      },
+      {
+        "internalType": "uint8[4]",
+        "name": "background_color",
+        "type": "uint8[4]"
+      },
+      {
+        "internalType": "string",
+        "name": "font_family",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "font_name",
+        "type": "string"
+      },
+      {
+        "internalType": "bool",
+        "name": "overlay",
+        "type": "bool"
+      }
+    ],
+    "name": "drawText",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint8",
+        "name": "x",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint8",
+        "name": "y",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint8",
+        "name": "width",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint8",
+        "name": "height",
+        "type": "uint8"
+      }
+    ],
+    "name": "getZoneInfo",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "price",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "owner",
+            "type": "address"
+          }
+        ],
+        "internalType": "struct Board.Tile[][]",
+        "name": "",
+        "type": "tuple[][]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "pendingWithdrawals",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "dede",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "dodo",
+        "type": "uint256"
+      }
+    ],
+    "name": "test",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint8",
+        "name": "",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint8",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "name": "tiles",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "price",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "withdraw",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

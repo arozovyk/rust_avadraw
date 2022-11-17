@@ -1,0 +1,17 @@
+[package]
+name = "generics"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+image = "0.24.4"
+imagequant = "4.0"
+lodepng = "3.4"
+oxipng ="6.0.1"
+tokio-postgres="0.7.7"
+serde_postgres ="0.2.0"
+serde ={version="1.0.147", features = ["derive"]}
+tokio = { version = "1.21.2", features = ["full"]}
+web3 = "0.18.0"
