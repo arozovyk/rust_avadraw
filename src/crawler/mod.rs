@@ -4,8 +4,10 @@ use tokio::sync::mpsc::Sender;
 use tokio::time::*;
 
 use web3::contract::{Contract, Error, Options};
+use web3::futures::future::ok;
+use web3::futures::{future, StreamExt};
 use web3::transports::WebSocket;
-use web3::types::{Address, H160, U256};
+use web3::types::{Address, BlockNumber, FilterBuilder, H160, U256, U64};
 
 use crate::comms::Command;
 
@@ -44,30 +46,49 @@ async fn get_tile(board_contract: Contract<WebSocket>, x: U256, y: U256) -> (U25
         .unwrap()
 }
 
+async fn get_board_contract() -> Contract<WebSocket> {
+    let web3s = get_web3_instance().await;
+    let board_addr = Address::from_str(&env::var("BOARD_ADDRESS").unwrap()).unwrap();
+    Contract::from_json(web3s.eth(), board_addr, include_bytes!("Board.json")).unwrap()
+}
+
 #[allow(dead_code)]
 pub async fn call_board() -> Result<(), Error> {
-    let web3s = get_web3_instance().await;
-
-    let board_addr = Address::from_str(&env::var("BOARD_ADDRESS").unwrap()).unwrap();
-    let board_contract =
-        Contract::from_json(web3s.eth(), board_addr, include_bytes!("Board.json")).unwrap();
-
+    let board_contract = get_board_contract().await;
     let tile = get_tile(
         board_contract,
         U256::from_str("0").unwrap(),
         U256::from_str("0").unwrap(),
     )
     .await;
-
     println!("{:?}", tile);
     Ok(())
 }
 
+async fn get_events() -> web3::contract::Result<()> {
+    let web3 = get_web3_instance().await;
+
+    let filter = FilterBuilder::default()
+        .from_block(BlockNumber::Number(U64::from(0)))
+        .to_block(BlockNumber::Latest)
+        .address(vec![Address::from_str(
+            &env::var("BOARD_ADDRESS").unwrap(),
+        )
+        .unwrap()])
+        .build();
+    let sub = web3.eth_subscribe().subscribe_logs(filter).await?;
+    sub.for_each(|log| {
+        println!("{:?}", log);
+        future::ready(())
+    })
+    .await;
+    ok(()).await
+}
 // monitors the contract for changes
 // puts draw events into the db
 
 pub async fn run(tx: &Sender<Command>) {
-    let mut i = 0;
+    let mut i = 1;
 
     loop {
         tokio::time::sleep(Duration::from_secs(2)).await;
@@ -80,6 +101,10 @@ pub async fn run(tx: &Sender<Command>) {
             };
             tx.send(cmd).await.unwrap();
         }
+        if i % 3 == 0 {
+            get_events().await.unwrap();
+        }
+
         call_board().await.unwrap();
         i += 1;
     }
