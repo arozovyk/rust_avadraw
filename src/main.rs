@@ -3,13 +3,17 @@
 mod common;
 mod crawler;
 mod image_renderer;
-use std::thread;
-#[tokio::main]
+use tokio::runtime::Runtime;
 
-async fn main() {
-    let ir_handle = thread::spawn(move || image_renderer::run() );
-    let crawler_handle = thread::spawn(move || crawler::run());
-    let crawler_handle =  crawler_handle.join().unwrap() ;
-    let ir_handle = ir_handle.join().unwrap() ;
-    
+
+ fn main() {
+    dotenv::dotenv().ok();
+    let rt = Runtime::new().unwrap();
+    rt.block_on(async move {
+        crawler::run().await;
+    });
+
+    /*  let ir_handle = thread::spawn(move || image_renderer::run());
+    ir_handle.join().unwrap(); */
+    // TODO launch an api server here.
 }
