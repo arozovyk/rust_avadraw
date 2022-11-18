@@ -1,13 +1,21 @@
+use ethereum_abi::Abi;
+/* use primitive_types::H256;
+ */
+use serde::Serialize;
 use std::env;
-use std::str::FromStr;
+use std::fs::File;
+use std::ops::Add;
+use std::os::macos::raw;
+ use std::str::FromStr;
 use tokio::sync::mpsc::Sender;
 use tokio::time::*;
-
+use web3::contract::tokens::Tokenize;
 use web3::contract::{Contract, Error, Options};
+use web3::ethabi::{decode, ParamType, RawLog, Token};
 use web3::futures::future::ok;
-use web3::futures::{future, StreamExt};
 use web3::transports::WebSocket;
-use web3::types::{Address, BlockNumber, FilterBuilder, H160, U256, U64};
+use web3::types::{Address, BlockNumber, FilterBuilder, H160, H256, U256, U64};
+use ParamType::*;
 
 use crate::comms::Command;
 
@@ -71,17 +79,94 @@ async fn get_events() -> web3::contract::Result<()> {
     let filter = FilterBuilder::default()
         .from_block(BlockNumber::Number(U64::from(0)))
         .to_block(BlockNumber::Latest)
-        .address(vec![Address::from_str(
-            &env::var("BOARD_ADDRESS").unwrap(),
-        )
-        .unwrap()])
+        .address(vec![
+            Address::from_str(&env::var("BOARD_ADDRESS").unwrap()).unwrap()
+        ])
         .build();
-    let sub = web3.eth_subscribe().subscribe_logs(filter).await?;
+    let contract = get_board_contract().await;
+    let abi = contract.abi();
+    let events = abi.events_by_name("Buy")?;
+    let t = web3.eth_filter().create_logs_filter(filter).await?;
+    let logs = t.logs().await.unwrap();
+    logs.iter().for_each(|log| {
+        let ll = log.data.serialize(serde_json::value::Serializer).unwrap();
+/*         let s = ll.as_str().unwrap();
+ */        let s=   "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000038d7ea4c68000";
+        let tup = vec![Uint(8), Uint(8), Uint(8), Uint(8)];
+        let _types = [
+            Tuple(tup),
+            Uint(256),
+            /* Uint(256),
+            Uint(8),
+            Bool,
+            Address,
+            Uint(8),
+            Uint(256), */
+        ];
+        let types2 = [Uint(32)];
+        let data = &[0x12u8; 32] ;
+        let v = decode(&types2,  data ).unwrap();
+        
+        v.iter().for_each(|t| {
+           match t {
+            Token::Uint(a)=>println!("Internal match {}",a.to_string()),
+            Token::Tuple( v )=>{
+                println!("A token :");
+                v.iter().for_each(|vt| {
+
+                    match vt {
+                        Token::Uint(a)=>println!("Internal match {}",a.to_string()),
+                        Token::Address(a)=>println!("Internal addr {}", a),
+                        t =>println!("Sraka, {}",t)
+                    }
+                })
+
+            }
+            _=>()
+           }
+        });
+    });
+
+    /* let t = web3.eth_filter().create_logs_filter(filter).await?;
+    let logs = t.logs().await.unwrap(); */
+
+    /*  logs.iter().for_each(|log| {
+    let thing = &log.data;
+    // FIXME
+
+
+    let abi: Abi = {
+        let file = File::open("src/crawler/Board.json").expect("failed to open ABI file");
+        serde_json::from_reader(file).expect("failed to parse ABI")
+    };
+    let data = thing.serialize(serde_json::value::Serializer).unwrap();
+
+    println!("Data is {:?}", &data.as_str().unwrap()); */
+
+    /*         let data = (&data.as_str().unwrap()).as_bytes();
+     */
+    /*         let data: String = decode(data).unwrap();
+     */
+    /*   let (evt, decoded_data) = abi
+        .decode_log_from_slice(
+            &[H256::from_str(
+                "0x726d161b78cf6b8052b856c14d2c21d3cfd1371760b4fa1472e9bc61be434890",
+            )
+            .unwrap()],
+            data.as_bytes(),
+        )
+        .expect("failed decoding log");
+
+    println!("event: {}\ndata: {:?}", evt.name, decoded_data); */
+    /*   }); */
+
+    // TODO also use the subscription for new events? image renderer could use it
+    /*  let sub = web3.eth_subscribe().subscribe_logs(filter).await?;
     sub.for_each(|log| {
         println!("{:?}", log);
         future::ready(())
     })
-    .await;
+    .await; */
     ok(()).await
 }
 // monitors the contract for changes
@@ -91,7 +176,7 @@ pub async fn run(tx: &Sender<Command>) {
     let mut i = 1;
 
     loop {
-        tokio::time::sleep(Duration::from_secs(2)).await;
+        tokio::time::sleep(Duration::from_secs(1)).await;
         println!("Crawler step {} ", i);
         if i % 5 == 0 {
             println!("Crawler sends buy command ");
@@ -101,7 +186,7 @@ pub async fn run(tx: &Sender<Command>) {
             };
             tx.send(cmd).await.unwrap();
         }
-        if i % 3 == 0 {
+        if i % 2 == 0 {
             get_events().await.unwrap();
         }
 
