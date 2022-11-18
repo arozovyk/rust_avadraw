@@ -1,6 +1,7 @@
 use ethereum_abi::Abi;
 /* use primitive_types::H256;
  */
+use num_bigint::BigUint;
 use serde::Serialize;
 use std::env;
 use std::fs::File;
@@ -91,9 +92,9 @@ async fn get_events() -> web3::contract::Result<()> {
     logs.iter().for_each(|log| {
         let ll = log.data.serialize(serde_json::value::Serializer).unwrap();
 /*         let s = ll.as_str().unwrap();
- */        let s=   "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000038d7ea4c68000";
+ */        let s=   "000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000038d7ea4c68000";
         let tup = vec![Uint(8), Uint(8), Uint(8), Uint(8)];
-        let _types = [
+        let  types = [
             Tuple(tup),
             Uint(256),
             /* Uint(256),
@@ -103,19 +104,26 @@ async fn get_events() -> web3::contract::Result<()> {
             Uint(8),
             Uint(256), */
         ];
-        let types2 = [Uint(32)];
-        let data = &[0x12u8; 32] ;
-        let v = decode(&types2,  data ).unwrap();
+         
+        let v = decode(&types ,  &hex::decode(s).unwrap() ).unwrap();
         
         v.iter().for_each(|t| {
            match t {
-            Token::Uint(a)=>println!("Internal match {}",a.to_string()),
+             Token::Uint(a)=>{
+                let mut b: Vec<u8> = vec![0u8; 32];
+                 a.to_big_endian(&mut b);
+                 let r = BigUint::from_bytes_be(&b);
+                println!("External match transformed {}",r  )},
             Token::Tuple( v )=>{
                 println!("A token :");
                 v.iter().for_each(|vt| {
 
                     match vt {
-                        Token::Uint(a)=>println!("Internal match {}",a.to_string()),
+                        Token::Uint(a)=>{
+                            let mut b: Vec<u8> = vec![0u8; 32];
+                             a.to_big_endian(&mut b);
+                             let r = BigUint::from_bytes_be(&b);
+                            println!("External match transformed {}",r )},
                         Token::Address(a)=>println!("Internal addr {}", a),
                         t =>println!("Sraka, {}",t)
                     }
