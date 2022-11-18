@@ -1,13 +1,13 @@
 use ethereum_abi::Abi;
-/* use primitive_types::H256;
- */
+use primitive_types::H256;
+
 use num_bigint::BigUint;
 use serde::Serialize;
 use std::env;
 use std::fs::File;
 use std::ops::Add;
 use std::os::macos::raw;
- use std::str::FromStr;
+use std::str::FromStr;
 use tokio::sync::mpsc::Sender;
 use tokio::time::*;
 use web3::contract::tokens::Tokenize;
@@ -15,7 +15,7 @@ use web3::contract::{Contract, Error, Options};
 use web3::ethabi::{decode, ParamType, RawLog, Token};
 use web3::futures::future::ok;
 use web3::transports::WebSocket;
-use web3::types::{Address, BlockNumber, FilterBuilder, H160, H256, U256, U64};
+use web3::types::{Address, BlockNumber, FilterBuilder, H160, U256, U64};
 use ParamType::*;
 
 use crate::comms::Command;
@@ -84,89 +84,34 @@ async fn get_events() -> web3::contract::Result<()> {
             Address::from_str(&env::var("BOARD_ADDRESS").unwrap()).unwrap()
         ])
         .build();
-    let contract = get_board_contract().await;
-    let abi = contract.abi();
-    let events = abi.events_by_name("Buy")?;
     let t = web3.eth_filter().create_logs_filter(filter).await?;
     let logs = t.logs().await.unwrap();
     logs.iter().for_each(|log| {
         let ll = log.data.serialize(serde_json::value::Serializer).unwrap();
-/*         let s = ll.as_str().unwrap();
- */        let s=   "000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000038d7ea4c68000";
-        let tup = vec![Uint(8), Uint(8), Uint(8), Uint(8)];
-        let  types = [
-            Tuple(tup),
-            Uint(256),
-            /* Uint(256),
-            Uint(8),
-            Bool,
-            Address,
-            Uint(8),
-            Uint(256), */
-        ];
-         
-        let v = decode(&types ,  &hex::decode(s).unwrap() ).unwrap();
-        
-        v.iter().for_each(|t| {
-           match t {
-             Token::Uint(a)=>{
-                let mut b: Vec<u8> = vec![0u8; 32];
-                 a.to_big_endian(&mut b);
-                 let r = BigUint::from_bytes_be(&b);
-                println!("External match transformed {}",r  )},
-            Token::Tuple( v )=>{
-                println!("A token :");
-                v.iter().for_each(|vt| {
-
-                    match vt {
-                        Token::Uint(a)=>{
-                            let mut b: Vec<u8> = vec![0u8; 32];
-                             a.to_big_endian(&mut b);
-                             let r = BigUint::from_bytes_be(&b);
-                            println!("External match transformed {}",r )},
-                        Token::Address(a)=>println!("Internal addr {}", a),
-                        t =>println!("Sraka, {}",t)
-                    }
-                })
-
-            }
-            _=>()
-           }
-        });
+        let s = ll.as_str().unwrap();
+        let data = hex::decode(&s[2..]).unwrap();
+        let abi: Abi = {
+            let file = File::open("src/crawler/Board.json").expect("failed to open ABI file");
+            serde_json::from_reader(file).expect("failed to parse ABI")
+        };
+        let (evt, decoded_data) = abi
+            .decode_log_from_slice(
+                &[H256::from_str(
+                    "0x726d161b78cf6b8052b856c14d2c21d3cfd1371760b4fa1472e9bc61be434890",
+                )
+                .unwrap()],
+                &data,
+            )
+            .expect("failed decoding log");
+        println!("event: {}\ndata eee: {:?}", evt.name, decoded_data);
     });
 
-    /* let t = web3.eth_filter().create_logs_filter(filter).await?;
-    let logs = t.logs().await.unwrap(); */
-
-    /*  logs.iter().for_each(|log| {
-    let thing = &log.data;
     // FIXME
-
-
-    let abi: Abi = {
-        let file = File::open("src/crawler/Board.json").expect("failed to open ABI file");
-        serde_json::from_reader(file).expect("failed to parse ABI")
-    };
-    let data = thing.serialize(serde_json::value::Serializer).unwrap();
-
-    println!("Data is {:?}", &data.as_str().unwrap()); */
 
     /*         let data = (&data.as_str().unwrap()).as_bytes();
      */
     /*         let data: String = decode(data).unwrap();
      */
-    /*   let (evt, decoded_data) = abi
-        .decode_log_from_slice(
-            &[H256::from_str(
-                "0x726d161b78cf6b8052b856c14d2c21d3cfd1371760b4fa1472e9bc61be434890",
-            )
-            .unwrap()],
-            data.as_bytes(),
-        )
-        .expect("failed decoding log");
-
-    println!("event: {}\ndata: {:?}", evt.name, decoded_data); */
-    /*   }); */
 
     // TODO also use the subscription for new events? image renderer could use it
     /*  let sub = web3.eth_subscribe().subscribe_logs(filter).await?;
