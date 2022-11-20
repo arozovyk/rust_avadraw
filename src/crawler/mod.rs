@@ -1,22 +1,19 @@
-use ethereum_abi::Abi;
+use ethereum_abi::{Abi, DecodedParams, Value};
 use primitive_types::H256;
 
-use num_bigint::BigUint;
 use serde::Serialize;
 use std::env;
 use std::fs::File;
 use std::ops::Add;
-use std::os::macos::raw;
-use std::str::FromStr;
+
+use ethereum_abi::Value::{Tuple, *};
+use std::str::{from_utf8, FromStr};
 use tokio::sync::mpsc::Sender;
 use tokio::time::*;
-use web3::contract::tokens::Tokenize;
 use web3::contract::{Contract, Error, Options};
-use web3::ethabi::{decode, ParamType, RawLog, Token};
 use web3::futures::future::ok;
 use web3::transports::WebSocket;
 use web3::types::{Address, BlockNumber, FilterBuilder, H160, U256, U64};
-use ParamType::*;
 
 use crate::comms::Command;
 
@@ -73,8 +70,71 @@ pub async fn call_board() -> Result<(), Error> {
     println!("{:?}", tile);
     Ok(())
 }
-struct BuyEvent {}
-async fn get_events() -> web3::contract::Result<()> {
+#[derive(Debug)]
+
+struct BuyEvent {
+    zone: (u32, u32, u32, u32),
+    price: std::string::String,
+    url: std::string::String,
+    buy_self: bool,
+    owner: std::string::String,
+}
+impl BuyEvent {
+    pub fn new(
+        zone: (u32, u32, u32, u32),
+        price: std::string::String,
+        url: std::string::String,
+        buy_self: bool,
+        owner: std::string::String,
+    ) -> Self {
+        BuyEvent {
+            zone,
+            price,
+            url,
+            buy_self,
+            owner,
+        }
+    }
+}
+impl From<DecodedParams> for BuyEvent {
+    fn from(decoded_data: DecodedParams) -> Self {
+        fn to_uint(v: Value) -> (primitive_types::U256, usize) {
+            if let Uint(a, b) = v {
+                (a, b)
+            } else {
+                (primitive_types::U256::from_str("-1").unwrap(), 1)
+            }
+        }
+        if let Tuple(v) = &decoded_data.get(0).unwrap().value {
+            let (x, y, dx, dy) = (
+                to_uint(v.get(0).unwrap().1.clone()).0.as_u32(),
+                to_uint(v.get(0).unwrap().1.clone()).0.as_u32(),
+                to_uint(v.get(0).unwrap().1.clone()).0.as_u32(),
+                to_uint(v.get(0).unwrap().1.clone()).0.as_u32(),
+            );
+            if let Uint(a, _) = &decoded_data.get(1).unwrap().value {
+                let price = a.to_string();
+                if let String(url) = &decoded_data.get(2).unwrap().value {
+                    if let Bool(buy_self) = &decoded_data.get(3).unwrap().value {
+                        if let Address(owner) = &decoded_data.get(4).unwrap().value {
+                            let owner = owner;
+                            return BuyEvent::new(
+                                (x, y, dx, dy),
+                                price,
+                                url.clone(),
+                                *buy_self,
+                                owner.to_string(),
+                            );
+                        }
+                    }
+                }
+            }
+        }
+        panic!("Failed to convert to BuyEvent struct");
+    }
+}
+
+async fn get_events() -> Vec<BuyEvent> {
     let web3 = get_web3_instance().await;
 
     let filter = FilterBuilder::default()
@@ -84,45 +144,31 @@ async fn get_events() -> web3::contract::Result<()> {
             Address::from_str(&env::var("BOARD_ADDRESS").unwrap()).unwrap()
         ])
         .build();
-    let t = web3.eth_filter().create_logs_filter(filter).await?;
+    let t = web3.eth_filter().create_logs_filter(filter).await.unwrap();
     let logs = t.logs().await.unwrap();
-    logs.iter().for_each(|log| {
-        let ll = log.data.serialize(serde_json::value::Serializer).unwrap();
-        let s = ll.as_str().unwrap();
-        let data = hex::decode(&s[2..]).unwrap();
-        let abi: Abi = {
-            let file = File::open("src/crawler/Board.json").expect("failed to open ABI file");
-            serde_json::from_reader(file).expect("failed to parse ABI")
-        };
+    logs.iter()
+        .map(|log| {
+            let ll = log.data.serialize(serde_json::value::Serializer).unwrap();
+            let s = ll.as_str().unwrap();
+            let data = hex::decode(&s[2..]).unwrap();
+            let abi: Abi = {
+                let file = File::open("src/crawler/Board.json").expect("failed to open ABI file");
+                serde_json::from_reader(file).expect("failed to parse ABI")
+            };
 
-        let (_, decoded_data) = abi
-            .decode_log_from_slice(
-                &[H256::from_str(
-                    "0x726d161b78cf6b8052b856c14d2c21d3cfd1371760b4fa1472e9bc61be434890",
+            let (_, decoded_data) = abi
+                .decode_log_from_slice(
+                    &[H256::from_str(
+                        "0x726d161b78cf6b8052b856c14d2c21d3cfd1371760b4fa1472e9bc61be434890",
+                    )
+                    .unwrap()],
+                    &data,
                 )
-                .unwrap()],
-                &data,
-            )
-            .expect("failed decoding log");
-        let value1 = &decoded_data.get(1).unwrap().value;
-        let param1 = &decoded_data.get(1).unwrap().param;
-    });
+                .expect("failed decoding log");
 
-    // FIXME
-
-    /*         let data = (&data.as_str().unwrap()).as_bytes();
-     */
-    /*         let data: String = decode(data).unwrap();
-     */
-
-    // TODO also use the subscription for new events? image renderer could use it
-    /*  let sub = web3.eth_subscribe().subscribe_logs(filter).await?;
-    sub.for_each(|log| {
-        println!("{:?}", log);
-        future::ready(())
-    })
-    .await; */
-    ok(()).await
+            BuyEvent::from(decoded_data)
+        })
+        .collect()
 }
 // monitors the contract for changes
 // puts draw events into the db
@@ -142,7 +188,8 @@ pub async fn run(tx: &Sender<Command>) {
             tx.send(cmd).await.unwrap();
         }
         if i % 2 == 0 {
-            get_events().await.unwrap();
+            let v = get_events().await;
+            println!("vec events is {:?}", v)
         }
 
         call_board().await.unwrap();
