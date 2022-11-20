@@ -73,7 +73,7 @@ pub async fn call_board() -> Result<(), Error> {
     println!("{:?}", tile);
     Ok(())
 }
-
+struct BuyEvent {}
 async fn get_events() -> web3::contract::Result<()> {
     let web3 = get_web3_instance().await;
 
@@ -94,7 +94,8 @@ async fn get_events() -> web3::contract::Result<()> {
             let file = File::open("src/crawler/Board.json").expect("failed to open ABI file");
             serde_json::from_reader(file).expect("failed to parse ABI")
         };
-        let (evt, decoded_data) = abi
+
+        let (_, decoded_data) = abi
             .decode_log_from_slice(
                 &[H256::from_str(
                     "0x726d161b78cf6b8052b856c14d2c21d3cfd1371760b4fa1472e9bc61be434890",
@@ -103,7 +104,8 @@ async fn get_events() -> web3::contract::Result<()> {
                 &data,
             )
             .expect("failed decoding log");
-        println!("event: {}\ndata eee: {:?}", evt.name, decoded_data);
+        let value1 = &decoded_data.get(1).unwrap().value;
+        let param1 = &decoded_data.get(1).unwrap().param;
     });
 
     // FIXME

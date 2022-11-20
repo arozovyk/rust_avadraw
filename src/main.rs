@@ -10,7 +10,6 @@ use tokio::sync::mpsc;
 #[tokio::main]
 async fn main() {
     let (tx, mut rx) = mpsc::channel::<comms::Command>(32);
-
     dotenv::dotenv().ok();
     let crawler_handle = tokio::spawn(async move {
         crawler::run(&tx).await;
@@ -19,6 +18,7 @@ async fn main() {
     let ir_handler = tokio::spawn(async move {
         image_renderer::run(&mut rx).await;
     });
+
     crawler_handle.await.unwrap();
     ir_handler.await.unwrap();
 
