@@ -1,21 +1,16 @@
+use crate::comms::Command;
+use ethereum_abi::Value::{Tuple, *};
 use ethereum_abi::{Abi, DecodedParams, Value};
 use primitive_types::H256;
-
 use serde::Serialize;
 use std::env;
 use std::fs::File;
-use std::ops::Add;
-
-use ethereum_abi::Value::{Tuple, *};
-use std::str::{from_utf8, FromStr};
+use std::str::FromStr;
 use tokio::sync::mpsc::Sender;
 use tokio::time::*;
 use web3::contract::{Contract, Error, Options};
-use web3::futures::future::ok;
 use web3::transports::WebSocket;
 use web3::types::{Address, BlockNumber, FilterBuilder, H160, U256, U64};
-
-use crate::comms::Command;
 
 fn wei_to_eth(wei_val: U256) -> f64 {
     let res = wei_val.as_u128() as f64;
@@ -71,7 +66,7 @@ pub async fn call_board() -> Result<(), Error> {
     Ok(())
 }
 #[derive(Debug)]
-
+#[allow(dead_code)]
 struct BuyEvent {
     zone: (u32, u32, u32, u32),
     price: std::string::String,
