@@ -1,6 +1,6 @@
 use crate::comms::Command;
-use ethereum_abi::Value::{Tuple, *};
-use ethereum_abi::{Abi, DecodedParams, Value};
+mod types;
+use ethereum_abi::Abi;
 use primitive_types::H256;
 use serde::Serialize;
 use std::env;
@@ -11,6 +11,8 @@ use tokio::time::*;
 use web3::contract::{Contract, Error, Options};
 use web3::transports::WebSocket;
 use web3::types::{Address, BlockNumber, FilterBuilder, H160, U256, U64};
+
+use self::types::Event;
 
 fn wei_to_eth(wei_val: U256) -> f64 {
     let res = wei_val.as_u128() as f64;
@@ -65,71 +67,8 @@ pub async fn call_board() -> Result<(), Error> {
     println!("{:?}", tile);
     Ok(())
 }
-#[derive(Debug)]
-#[allow(dead_code)]
-struct BuyEvent {
-    zone: (u32, u32, u32, u32),
-    price: std::string::String,
-    url: std::string::String,
-    buy_self: bool,
-    owner: std::string::String,
-}
-impl BuyEvent {
-    pub fn new(
-        zone: (u32, u32, u32, u32),
-        price: std::string::String,
-        url: std::string::String,
-        buy_self: bool,
-        owner: std::string::String,
-    ) -> Self {
-        BuyEvent {
-            zone,
-            price,
-            url,
-            buy_self,
-            owner,
-        }
-    }
-}
-impl From<DecodedParams> for BuyEvent {
-    fn from(decoded_data: DecodedParams) -> Self {
-        fn to_uint(v: Value) -> (primitive_types::U256, usize) {
-            if let Uint(a, b) = v {
-                (a, b)
-            } else {
-                (primitive_types::U256::from_str("-1").unwrap(), 1)
-            }
-        }
-        if let Tuple(v) = &decoded_data.get(0).unwrap().value {
-            let (x, y, dx, dy) = (
-                to_uint(v.get(0).unwrap().1.clone()).0.as_u32(),
-                to_uint(v.get(0).unwrap().1.clone()).0.as_u32(),
-                to_uint(v.get(0).unwrap().1.clone()).0.as_u32(),
-                to_uint(v.get(0).unwrap().1.clone()).0.as_u32(),
-            );
-            if let Uint(a, _) = &decoded_data.get(1).unwrap().value {
-                let price = a.to_string();
-                if let String(url) = &decoded_data.get(2).unwrap().value {
-                    if let Bool(buy_self) = &decoded_data.get(3).unwrap().value {
-                        if let Address(owner) = &decoded_data.get(4).unwrap().value {
-                            let owner = owner;
-                            return BuyEvent::new(
-                                (x, y, dx, dy),
-                                price,
-                                url.clone(),
-                                *buy_self,
-                                owner.to_string(),
-                            );
-                        }
-                    }
-                }
-            }
-        }
-        panic!("Failed to convert to BuyEvent struct");
-    }
-}
 
-async fn get_events() -> Vec<BuyEvent> {
+async fn get_events() -> Vec<Event> {
     let web3 = get_web3_instance().await;
 
     let filter = FilterBuilder::default()
@@ -150,44 +89,39 @@ async fn get_events() -> Vec<BuyEvent> {
                 let file = File::open("src/crawler/Board.json").expect("failed to open ABI file");
                 serde_json::from_reader(file).expect("failed to parse ABI")
             };
+            let topic = log.topics[0];
 
-            let (_, decoded_data) = abi
-                .decode_log_from_slice(
-                    &[H256::from_str(
-                        "0x726d161b78cf6b8052b856c14d2c21d3cfd1371760b4fa1472e9bc61be434890",
-                    )
-                    .unwrap()],
-                    &data,
-                )
-                .expect("failed decoding log");
+            let decode_log = |log| {
+                let (_, decoded_data) = abi
+                    .decode_log_from_slice(&[H256::from_str(log).unwrap()], &data)
+                    .expect("failed decoding log");
+                decoded_data
+            };
 
-            BuyEvent::from(decoded_data)
+            match topic.to_string().as_str() {
+                "0x726d…4890" => Event::BuyEvent(types::BuyEvent::from(decode_log(
+                    &"0x726d161b78cf6b8052b856c14d2c21d3cfd1371760b4fa1472e9bc61be434890",
+                ))),
+                "0x8f6e…b058" => Event::DrawImage(types::DrawImage::from(decode_log(
+                    &"0x8f6e6256d8b6d91161e73f93b4a67134ea0b96d70a3c8c6d770db7e8d4d1b058",
+                ))),
+                _ => panic!("Topic is not supported"),
+            }
         })
         .collect()
 }
+
 // monitors the contract for changes
 // puts draw events into the db
-
-pub async fn run(tx: &Sender<Command>) {
-    let mut i = 1;
-
+pub async fn run(_tx: &Sender<Command>) {
     loop {
+        /*   let cmd = Command::Buy {
+            from: "Dog".into(),
+            price: 420,
+        };
+        tx.send(cmd).await.unwrap(); */
         tokio::time::sleep(Duration::from_secs(1)).await;
-        println!("Crawler step {} ", i);
-        if i % 5 == 0 {
-            println!("Crawler sends buy command ");
-            let cmd = Command::Buy {
-                from: "Dog".into(),
-                price: 420,
-            };
-            tx.send(cmd).await.unwrap();
-        }
-        if i % 2 == 0 {
-            let v = get_events().await;
-            println!("vec events is {:?}", v)
-        }
-
-        call_board().await.unwrap();
-        i += 1;
+        let v = get_events().await;
+        println!("vec events is {:?}", v)
     }
 }

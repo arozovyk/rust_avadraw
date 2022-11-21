@@ -12,11 +12,11 @@ async fn main() -> std::io::Result<()> {
     let (tx, mut rx) = mpsc::channel::<comms::Command>(32);
     dotenv::dotenv().ok();
 
-    let _crawler_handle = tokio::spawn(async move {
+    tokio::spawn(async move {
         crawler::run(&tx).await;
     });
 
-    let _ir_handler = tokio::spawn(async move {
+    tokio::spawn(async move {
         image_renderer::run(&mut rx).await;
     });
 
