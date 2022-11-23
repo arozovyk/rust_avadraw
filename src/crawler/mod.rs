@@ -1,18 +1,18 @@
 use crate::comms::Command;
 mod types;
+use self::types::Event;
 use ethereum_abi::Abi;
+use futures_util::StreamExt;
 use primitive_types::H256;
 use serde::Serialize;
 use std::env;
 use std::fs::File;
+use std::io::prelude::*;
 use std::str::FromStr;
 use tokio::sync::mpsc::Sender;
-use tokio::time::*;
 use web3::contract::{Contract, Error, Options};
 use web3::transports::WebSocket;
 use web3::types::{Address, BlockNumber, FilterBuilder, H160, U256, U64};
-
-use self::types::Event;
 
 fn wei_to_eth(wei_val: U256) -> f64 {
     let res = wei_val.as_u128() as f64;
@@ -64,64 +64,95 @@ pub async fn call_board() -> Result<(), Error> {
         U256::from_str("0").unwrap(),
     )
     .await;
+
     println!("{:?}", tile);
     Ok(())
 }
-
-async fn get_events() -> Vec<Event> {
-    let web3 = get_web3_instance().await;
-
-    let filter = FilterBuilder::default()
+fn get_board_filter() -> web3::types::Filter {
+    FilterBuilder::default()
         .from_block(BlockNumber::Number(U64::from(0)))
         .to_block(BlockNumber::Latest)
         .address(vec![
             Address::from_str(&env::var("BOARD_ADDRESS").unwrap()).unwrap()
         ])
-        .build();
-    let t = web3.eth_filter().create_logs_filter(filter).await.unwrap();
-    let logs = t.logs().await.unwrap();
-    logs.iter()
-        .map(|log| {
-            let ll = log.data.serialize(serde_json::value::Serializer).unwrap();
-            let s = ll.as_str().unwrap();
-            let data = hex::decode(&s[2..]).unwrap();
-            let abi: Abi = {
-                let file = File::open("src/crawler/Board.json").expect("failed to open ABI file");
-                serde_json::from_reader(file).expect("failed to parse ABI")
-            };
-            let topic = log.topics[0];
+        .build()
+}
+fn decode_log(log: &web3::types::Log) -> Event {
+    let tx_hash = log.transaction_hash.unwrap();
+    let value = tx_hash
+        .serialize(serde_json::value::Serializer)
+        .ok()
+        .unwrap();
+    if let serde_json::Value::String(tx_hash_string) = value {
+        let mut file = File::create("foo.txt").unwrap();
+        file.write_all(tx_hash.as_bytes()).unwrap();
+        let ll = log.data.serialize(serde_json::value::Serializer).unwrap();
+        let s = ll.as_str().unwrap();
+        let data = hex::decode(&s[2..]).unwrap();
+        let abi: Abi = {
+            let file = File::open("src/crawler/Board.json").expect("failed to open ABI file");
+            serde_json::from_reader(file).expect("failed to parse ABI")
+        };
+        let topic = log.topics[0];
 
-            let decode_log = |log| {
-                let (_, decoded_data) = abi
-                    .decode_log_from_slice(&[H256::from_str(log).unwrap()], &data)
-                    .expect("failed decoding log");
-                decoded_data
-            };
+        let decode_log = |log| {
+            let (_, decoded_data) = abi
+                .decode_log_from_slice(&[H256::from_str(log).unwrap()], &data)
+                .expect("failed decoding log");
+            decoded_data
+        };
 
-            match topic.to_string().as_str() {
-                "0x726d…4890" => Event::BuyEvent(types::BuyEvent::from(decode_log(
+        match topic.to_string().as_str() {
+            "0x726d…4890" => Event::BuyEvent(
+                types::BuyEvent::from(decode_log(
                     &"0x726d161b78cf6b8052b856c14d2c21d3cfd1371760b4fa1472e9bc61be434890",
-                ))),
-                "0x8f6e…b058" => Event::DrawImage(types::DrawImage::from(decode_log(
+                )),
+                tx_hash_string,
+            ),
+            "0x8f6e…b058" => Event::DrawImage(
+                types::DrawImage::from(decode_log(
                     &"0x8f6e6256d8b6d91161e73f93b4a67134ea0b96d70a3c8c6d770db7e8d4d1b058",
-                ))),
-                _ => panic!("Topic is not supported"),
-            }
-        })
-        .collect()
+                )),
+                tx_hash_string,
+            ),
+            _ => panic!("Topic is not supported"),
+        }
+    } else {
+        panic!("Failed to decode log");
+    }
+}
+
+async fn get_sub_stream() -> web3::api::SubscriptionStream<WebSocket, web3::types::Log> {
+    let web3 = get_web3_instance().await;
+    let filter = get_board_filter();
+    web3.eth_subscribe()
+        .subscribe_logs(filter.clone())
+        .await
+        .unwrap()
+}
+async fn get_events() -> Vec<Event> {
+    let web3 = get_web3_instance().await;
+    let filter = get_board_filter();
+    let base_filter = web3
+        .eth_filter()
+        .create_logs_filter(filter.clone())
+        .await
+        .unwrap();
+    let logs = base_filter.logs().await.unwrap();
+    logs.iter().map(|log| decode_log(log)).collect()
 }
 
 // monitors the contract for changes
 // puts draw events into the db
 pub async fn run(_tx: &Sender<Command>) {
+    let events = get_events().await;
+    events
+        .iter()
+        .enumerate()
+        .for_each(|(i, event)| println!("Event {} {:?} ", i, event));
+    let mut subscription_stream = get_sub_stream().await;
     loop {
-        /*   let cmd = Command::Buy {
-            from: "Dog".into(),
-            price: 420,
-        };
-        tx.send(cmd).await.unwrap(); */
-        tokio::time::sleep(Duration::from_secs(1)).await;
-        let v = get_events().await;
-        println!("vec events is {:?}", v)
+        let new_log = subscription_stream.next().await.unwrap().ok().unwrap();
+        println!("Got new log {:?} ", decode_log(&new_log.clone()));
     }
 }

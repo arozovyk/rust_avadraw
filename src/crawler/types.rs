@@ -1,11 +1,11 @@
 use std::str::FromStr;
 
 use ethereum_abi::Value::{Tuple, *};
-use ethereum_abi::{ DecodedParams, Value};
+use ethereum_abi::{DecodedParams, Value};
 #[derive(Debug)]
 pub enum Event {
-    BuyEvent(BuyEvent),
-    DrawImage(DrawImage),
+    BuyEvent(BuyEvent, std::string::String),
+    DrawImage(DrawImage, std::string::String),
 }
 #[derive(Debug)]
 #[allow(dead_code)]
